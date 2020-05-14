@@ -29,6 +29,8 @@ type Matcher struct {
 	Binary []string `yaml:"binary,omitempty"`
 	// DSL are the dsl queries
 	DSL []string `yaml:"dsl,omitempty"`
+	// target is the target this matcher applies to
+	Target string `yaml:"target,omitempty"`
 	// dslCompiled is the compiled variant
 	dslCompiled []*govaluate.EvaluableExpression
 

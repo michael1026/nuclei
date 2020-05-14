@@ -79,8 +79,10 @@ func (e *HTTPExecutor) ConfigureAutoType(URL string) error {
 
 	for _, matcher := range e.httpRequest.Matchers {
 		if matcher.Type == "auto" {
-			matcher.Size = nil
-			matcher.Status = nil
+			// create a new matcher here for target
+			var m *matchers.Matcher
+			m.Target = URL
+			e.httpRequest.Matchers = append(e.httpRequest.Matchers, m)
 
 			for _, req := range compiledConfigRequest {
 				resp, err := e.httpClient.Do(req)
@@ -103,14 +105,14 @@ func (e *HTTPExecutor) ConfigureAutoType(URL string) error {
 				body := unsafeToString(data)
 
 				// Don't add duplicate response sizes
-				for _, size := range matcher.Size {
+				for _, size := range m.Size {
 					if size == len(body) {
 						continue
 					}
 				}
 
-				matcher.Size = append(matcher.Size, len(body))
-				matcher.Status = append(matcher.Status, resp.StatusCode)
+				m.Size = append(m.Size, len(body))
+				m.Status = append(m.Status, resp.StatusCode)
 			}
 		}
 	}
@@ -120,8 +122,6 @@ func (e *HTTPExecutor) ConfigureAutoType(URL string) error {
 
 // ExecuteHTTP executes the HTTP request on a URL
 func (e *HTTPExecutor) ExecuteHTTP(URL string) error {
-	// Possibly configure the matchers here
-
 	// Compile each request for the template based on the URL
 	compiledRequest, err := e.httpRequest.MakeHTTPRequest(URL)
 	if err != nil {
@@ -155,6 +155,9 @@ mainLoop:
 		var headers string
 		matcherCondition := e.httpRequest.GetMatchersCondition()
 		for _, matcher := range e.httpRequest.Matchers {
+			if matcher.Target != "" && matcher.Target != URL {
+				continue
+			}
 			// Only build the headers string if the matcher asks for it
 			part := matcher.GetPart()
 			if part == matchers.AllPart || part == matchers.HeaderPart && headers == "" {
